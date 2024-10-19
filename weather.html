@@ -1,0 +1,230 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+    <script src="https://kit.fontawesome.com/c151f8b53b.js" crossorigin="anonymous"></script>
+    <link rel="stylesheet" href="weather.css">
+</head>
+
+<body>
+    <section>
+        <div id="box">
+            <input type="text" placeholder="search for weather" id="search">
+            <label for="search"><button id="butt">
+                    <i class="fa-solid fa-magnifying-glass"></i></button>
+            </label>
+            <section class="weatherdisplay" style="display: none;">
+                <div id="locationer">
+                    <div id="location"><i class="fa-solid fa-location-dot"></i>
+                        <a id="locat" class="current-location"> Kottathur</a>
+                    </div>
+                    <h3 class="current-data">Sunday,29 Aug</h3>
+                </div>
+
+
+                <div id="temp">
+                    <img src="imgdata/sun.png" class="current-image">
+                    <div id="temp1">
+                        <h3 class="current-value">-1°C</h3>
+                        <h3 class="current-condition">cloudy</h3>
+
+                    </div>
+                </div>
+
+                <div id="description">
+                    <div id="humidity">
+                        <i class="fa-solid fa-droplet"></i>
+                        <span>
+                            <h3>Humidity</h3>
+                            <h3 class="current-humidity">45%</h3>
+                        </span>
+
+                    </div>
+                    <div id="windspeed">
+                        <i class="fa-solid fa-wind"></i>
+                        <span>
+                            <h3>Windspeed</h3>
+                            <h3 class="current-windspeed">2 m/s</h3>
+                        </span>
+
+                    </div>
+                </div>
+                <div id="weeks" class="weeks">
+                    <div id="days">
+                        <h5>Sep 28</h5>
+                        <img src="imgdata/snowflake.png">
+                        <h5>30°C</h5>
+                    </div>
+                    <div id="days">
+                        <h5>Sep 28</h5>
+                        <img src="imgdata/snowflake.png">
+                        <h5>30°C</h5>
+                    </div>
+                    <div id="days">
+                        <h5>Sep 28</h5>
+                        <img src="imgdata/snowflake.png">
+                        <h5>30°C</h5>
+                    </div>
+                    <div id="days">
+                        <h5>Sep 28</h5>
+                        <img src="imgdata/snowflake.png">
+                        <h5>30°C</h5>
+                    </div>
+                </div>
+            </section>
+            <section id="online" class="searchdisplay">
+                <img src="weather.png">
+                <div>
+                    <h3>Search city</h3><br>
+                    <h3>"Enter a city or location to get real-time weather updates!"</h3>
+                </div>
+            </section>
+            <section id="online" class="notfounddisplay" style="display: none;">
+                <img src="https://agentestudio.com/uploads/post/image/69/main_how_to_design_404_page.png">
+                <div style="padding-left: 90px;">
+                    <h3>oops</h3>
+                    <h3>Not found!</h3>
+                </div>
+            </section>
+        </div>
+
+        <script>
+            const input = document.getElementById("search")
+            const search = document.getElementById("butt")
+            const apis = '2b5aa631f0e489332adc351e423de67a'
+            const searchdisplay = document.querySelector(".searchdisplay")
+            const weatherdisplay = document.querySelector(".weatherdisplay")
+            const notfounddisplay = document.querySelector(".notfounddisplay")
+            const currentdata = document.querySelector(".current-data")
+            const currentlocation = document.querySelector(".current-location")
+            const currentvalue = document.querySelector(".current-value")
+            const currentcondition = document.querySelector(".current-condition")
+            const currenthumdity = document.querySelector(".current-humidity")
+            const currentwindspeed = document.querySelector(".current-windspeed")
+            const currentimage = document.querySelector(".current-image")
+            const container = document.querySelector(".weeks")
+
+
+            search.addEventListener('click', () => {
+                const city = input.value
+                if (city.trim() != '') {
+                    weatherupdate(input.value)
+                    console.log(city)
+                    input.value = ''
+                    input.blur()
+                }
+            })
+            input.addEventListener('keydown', (event) => {
+                if (event.key == 'Enter' && input.value.trim() != '') {
+                    weatherupdate(input.value)
+                    console.log(input.value)
+                    input.value = ''
+                    input.blur()
+                }
+            })
+            async function datafetch(reader, input) {
+                const apiurl = `https://api.openweathermap.org/data/2.5/${reader}?q=${input}&appid=${apis}&units=metric`
+                const url = await fetch(apiurl)
+                return url.json()
+
+            }
+            async function weatherupdate(input) {
+                const data = await datafetch('weather', input)
+                if (data.cod != 200) {
+                    displayevent(notfounddisplay)
+                    return
+                }
+                const { name: country,
+                    main: { humidity, temp },
+                    weather: [{ id, main }],
+                    wind: { speed }
+
+                } = data
+                currentlocation.textContent = country;
+                currentcondition.textContent = main;
+                currentvalue.textContent = Math.floor(temp) + '°C';
+                currenthumdity.textContent = Math.floor(humidity) + '%';
+                currentwindspeed.textContent = speed + 'm/s';
+                currentimage.src = `imgdata/${getimage(id)}`
+                currentdata.textContent = generatedate()
+
+                await forecastweather(input);
+                displayevent(weatherdisplay)
+            }
+
+            function generatedate() {
+                const dates = new Date();
+                const num = {
+                    weekday: 'short',
+                    day: '2-digit',
+                    month: 'short'
+                }
+                return dates.toLocaleDateString('en-GB', num);
+
+            }
+            function displayevent(section) {
+                [weatherdisplay, searchdisplay, notfounddisplay]
+                    .forEach(section =>
+                        section.style.display = 'none'
+                    )
+                section.style.display = 'block'
+            }
+            async function forecastweather(input) {
+                const forecastdata = await datafetch('forecast', input)
+                const updatetime = '12:00:00';
+                const updatedate = new Date().toISOString().split('T')[0]
+                container.innerHTML = ''
+                forecastdata.list.forEach(forecaster => {
+
+                    if (forecaster.dt_txt.includes(updatetime)
+                        && !forecaster.dt_txt.includes(updatedate)) {
+                        updatebox(forecaster)
+
+                    }
+                })
+
+            }
+            function updatebox(data) {
+                console.log(data)
+                const {
+                    dt_txt: date,
+                    weather: [{ id }],
+                    main: { temp }
+                } = data
+                const datee = new Date(date)
+                const options = {
+                    day: '2-digit',
+                    month: 'short'
+                }
+                const result = datee.toLocaleDateString('en-US', options);
+
+                const tempDiv = document.createElement('div');
+                tempDiv.innerHTML = ` 
+        <div id="days">
+            <h5>${result}</h5>
+            <img src="imgdata/${getimage(id)}">
+            <h5>${Math.round(temp)}°C</h5>
+        </div>`;
+
+                const newElement = tempDiv.firstElementChild;
+
+                container.insertAdjacentElement("beforeend", newElement);
+            }
+            function getimage(id) {
+                if (id <= 232) return 'thunderstorm.png'
+                if (id <= 321) return 'light-rain.png'
+                if (id <= 530) return 'rain.png'
+                if (id <= 641) return 'snowflake.png'
+                if (id <= 781) return 'fog.png'
+                if (id <= 800) return 'clouds.png'
+                else return 'sun.png'
+
+            }
+
+        </script>
+</body>
+
+</html>
